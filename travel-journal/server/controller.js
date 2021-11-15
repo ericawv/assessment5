@@ -1,18 +1,82 @@
+require("dotenv").config();
 
+const { CONNECTION_STRING } = process.env;
+
+const Sequelize = require("sequelize");
+
+const sequelize = new Sequelize(CONNECTION_STRING, {
+  dialect: 'postgres',
+  dialectOptions: {
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  },
+});
 
 module.exports = {
+
+    deleteCity: (req, res) => {
+        let {id} = req.params       
+
+        sequelize.query(`
+        delete from cities
+        where city_id = ${id};
+        `)
+            .then((dbRES) => res.status(200).send(dbRES[0]))
+            .catch((err) => console.log(err)); 
+        
+    },
+    
+    getCities: (req, res) => {
+        sequelize.query(`
+        select city_id, city.name as city_name, rating, country.country_id, country.name
+        from cities as city 
+            join countries as country
+               on city.country_id = country.country_id;`)
+            .then((dbRES) => res.status(200).send(dbRES[0]))
+            .catch((err) => console.log(err));  
+    },
+
+    getCountries: (req, res) => {
+        sequelize.query(`
+        select * from countries;`)
+            .then((dbRES) => res.status(200).send(dbRES[0]))
+            .catch((err) => console.log(err));
+    },
+
+    createCity: (req, res) => {
+       let {name, rating, countryId} = req.body
+
+        sequelize.query(`
+        insert into cities (name, rating, country_id)
+        values ('${name}', ${rating}, ${countryId})`)
+            .then((dbRES) => res.status(200).send(dbRES[0]))
+            .catch((err) => console.log(err));
+    },
+
     seed: (req, res) => {
         sequelize.query(`
             drop table if exists cities;
-            drop table if exists countries;
+            drop table if exists countries; 
 
             create table countries (
                 country_id serial primary key, 
                 name varchar
             );
 
-            *****YOUR CODE HERE*****
-
+            create table cities (
+                city_id serial primary key,
+                name varchar,
+                rating integer, 
+                country_id integer reference countries (country_id)        
+            ); 
+             
+            insert into cities (name, rating, country_id)
+            values ('Atlanta', 2, 187),
+            ('Salvador', 1, 5)
+            ('Chattanooga', 1, 187);
+                
+        
             insert into countries (name)
             values ('Afghanistan'),
             ('Albania'),
